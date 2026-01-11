@@ -77,9 +77,6 @@ if __name__ == "__main__":
     model_name = "mistralai/Mistral-7B-v0.1"
 
     if args.eager:
-        print()
-        print("Base Attn (eager)")
-        print()
         model, tokenizer = load_model(model_name, "eager")
         if args.full:
             profile_full_generation(model, tokenizer, "Base Attn")
@@ -87,9 +84,6 @@ if __name__ == "__main__":
             profile_attention_layer(model, "Base Attn")
 
     if args.flash_attn_2:
-        print()
-        print("Flash Attn")
-        print()
         model, tokenizer = load_model(model_name, "flash_attention_2")
         if args.full:
             profile_full_generation(model, tokenizer, "Flash Attn")
