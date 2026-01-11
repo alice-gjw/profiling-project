@@ -6,7 +6,6 @@ from profile_utils import print_profile_results
 
 def load_model(model_name, attn_impl):
     tokenizer = AutoTokenizer.from_pretrained(model_name)
-    tokenizer.pad_token = tokenizer.eos_token
     
     model = AutoModelForCausalLM.from_pretrained(
         model_name,
@@ -14,6 +13,7 @@ def load_model(model_name, attn_impl):
         device_map="auto",
         attn_implementation=attn_impl
     ).eval()
+    model.generation_config.pad_token_id = tokenizer.eos_token_id
     return model, tokenizer
 
 def profile_full_generation(model, tokenizer, title):
@@ -35,7 +35,7 @@ def profile_full_generation(model, tokenizer, title):
             model.generate(**inputs, max_new_tokens=50)
         torch.cuda.synchronize()
 
-    print_profile_results(prof, f"{title} - Full Generation")
+    print_profile_results(prof, f"{title} - Full Generation:")
 
 def profile_attention_layer(model, title, seq_len=64):
     batch_size = 1
@@ -64,7 +64,7 @@ def profile_attention_layer(model, title, seq_len=64):
                 attn_layer(hidden_states, position_embeddings=position_embeddings, attention_mask=None)
         torch.cuda.synchronize()
 
-    print_profile_results(prof, f"{title} - Attention Layer Only")
+    print_profile_results(prof, f"{title} - Attention Layer Only:")
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()

@@ -7,11 +7,14 @@ def print_profile_results(prof, title, top_n=15):
     attn_metrics_filter = [
         "aten::bmm",     # Q@K and scores@V (base attention)
         "aten::_softmax",     # Attention softmax
-        "aten::_flash_attention_forward",     # If FlashAttn enabled
         "aten::mm",     # Linear layers
         "aten::silu"     # Activation
     ]
-    events = [e for e in events if e.key in attn_metrics_filter]
+    flash_keywords = ["flash_fwd_kernel"]
+    
+    events = [e for e in events if 
+              e.key in attn_metrics_filter or
+              any(kw in e.key for kw in flash_keywords)]
     events = sorted(events, key=lambda x: -x.self_device_time_total)[:top_n]
 
     print("Latency (ms): GPU kernel execution time")
