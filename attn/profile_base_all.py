@@ -4,7 +4,11 @@ from transformers import AutoModelForCausalLM, AutoTokenizer
 
 model_name = "mistralai/Mistral-7B-v0.1"
 tokenizer = AutoTokenizer.from_pretrained(model_name)
-model = AutoModelForCausalLM.from_pretrained(model_name).cuda().eval()
+model = AutoModelForCausalLM.from_pretrained(
+    model_name,
+    torch_dtype=torch.float16,
+    device_map="auto"
+).eval()
 
 text = "Alice is falling down the"
 inputs = tokenizer(text, return_tensors="pt").to("cuda")

@@ -1,33 +1,37 @@
 import torch
-from torch.profiler import profile, ProfilerActivity, schedule
+from torch.profiler import profile, ProfilerActivity
 from transformers import AutoModelForCausalLM, AutoTokenizer
 
-# Load model and tokenizer
-model_name = "mistralai/Mistral-7B-v0.1"
+model_name = "gpt2"
 tokenizer = AutoTokenizer.from_pretrained(model_name)
 model = AutoModelForCausalLM.from_pretrained(
-            model_name,
-            attn_implementation="flash_attention_2"
-        ).cuda().eval()
+    model_name,
+    attn_implementation="flash_attention_2",
+    torch_dtype=torch.float16,
+    device_map="auto"
+).eval()
 
-text = "Alice is falling down the"
-inputs = tokenizer(text, return_tensors="pt").to("cuda")
+batch_size = 1
+seq_len = 64
+hidden_size = model.config.hidden_size
+
+attn_layer = model.transformer.h[0].attn
+hidden_states = torch.randn(batch_size, seq_len, hidden_size, device="cuda", dtype=torch.float32)
 
 for _ in range(10):
     with torch.no_grad():
-        model.generate(**inputs, max_new_tokens=50)
+        attn_layer(hidden_states)
 
 with profile(
-    activities=[ProfilerActivity.CPU, ProfilerActivity.CUDA],
-    record_shapes=True,
-    profile_memory=True,
-    with_stack=True
+    activities=[ProfilerActivity.CUDA],
+    profile_memory=True
 ) as prof:
     with torch.no_grad():
-        output = model.generate(**inputs, max_new_tokens=50)
+        for _ in range(100):
+            attn_layer(hidden_states)
 
 print()
-print("Flash Attn Results:")
+print("Flash Attn Results - Only Attention Layer:")
 print()
 
 events = prof.key_averages().sort(key=lambda x: -x.self_cuda_time_total)[:15]
