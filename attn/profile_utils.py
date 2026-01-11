@@ -4,6 +4,7 @@ def print_profile_results(prof, title, top_n=15):
     print()
 
     events = prof.key_averages()
+    events = [e for e in events if e.key.startswith("aten::")]
     events = sorted(events, key=lambda x: -x.self_device_time_total)[:top_n]
 
     print("Latency (ms): GPU kernel execution time")
